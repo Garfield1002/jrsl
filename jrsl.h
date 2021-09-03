@@ -111,7 +111,7 @@ void jrsl_display_list(skip_list_t *skip_list, label_printer_t label_printor);
 jrsl_us jrsl_max_level(jrsl_us N /* Maximum number of elements */, float p);
 
 static jrsl_us jrsl_random_level(skip_list_t *skip_list);
-static char *jrsl_center_string(char *str, size_t new_length);
+static void jrsl_center_string(char *str, size_t new_length);
 static void jrsl_init_head(skip_list_t *skip_list);
 
 static skip_node_t *jrsl_node_at(skip_list_t *skip_list, size_t index);
@@ -135,7 +135,7 @@ static void jrsl_init_head(skip_list_t *skip_list) {
   }
 
   head->data = NULL;
-  head->key = "head";
+  head->key = NULL;
   head->forward =
       (struct link *)malloc(skip_list->max_level * sizeof(struct link));
   if (!head->forward) {
@@ -455,7 +455,7 @@ jrsl_us jrsl_max_level(jrsl_us N, float p) {
 
 /* Centers a string by padding it left and right with spaces.
  */
-static char *jrsl_center_string(char *str, size_t new_length) {
+static void jrsl_center_string(char *str, size_t new_length) {
   size_t pad_l = (new_length - strlen(str)) / 2;
   size_t pad_r = new_length - pad_l;
   printf("%*s%s%*s", pad_l, "", str, pad_r, "");
@@ -508,7 +508,8 @@ void jrsl_display_list(skip_list_t *skip_list, label_printer_t label_printer) {
 
   /* draws the labels */
   if (label_printer) {
-    skip_node_t *node = skip_list->head;
+    printf("      ");
+    skip_node_t *node = skip_list->head->forward[0].node;
     while (node) {
       label_printer(node->key, node->data);
       node = node->forward[0].node;
