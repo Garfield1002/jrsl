@@ -1,4 +1,4 @@
-# C\C++ Skip List Implementation
+# C/C++ Skip List Implementation
 
 This is C89 implementation of the data type described in [William Pugh's paper](https:www.epaperpress.com/sortsearch/download/skiplist.pdf) with widths.
 
@@ -24,7 +24,7 @@ Skip lists are a simple data structure that can be used in place of balanced tre
 The idea behind single-header file libraries is that they're easy to distribute and deploy because all the code is contained in a single file.
 The .h file acts as its own header files, i.e. it declares the functions and classes contained in the file but no code is getting compiled.
 
-So in addition, you should select _exactly_ one C\C++ source file that actually instantiates the code, preferably a file you're not editing frequently.
+So in addition, you should select _exactly_ one C/C++ source file that actually instantiates the code, preferably a file you're not editing frequently.
 This file should define `JRSL_IMPLEMENTATION` to actually enable the function definitions.
 
 You can check out [example.c](https://github.com/Garfield1002/jrsl/blob/master/example/example.c) for some sample code.
