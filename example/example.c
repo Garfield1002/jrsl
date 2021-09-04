@@ -15,15 +15,17 @@ int main() {
 
   skip_list_t skip_list;
 
+  char *data[] = {"a", "e", "w", "d", "q", "u", "y", "b", "n",
+                  "c", "t", "m", "f", "z", "g", "o", "s", "h",
+                  "v", "i", "j", "p", "k", "r", "x", "l"};
+
+  size_t i; /* used in for loops */
+
   /* Let's initialize the skip list using jrsl_initialize, we eill use a
    * probability of 0.5. We can use jrsl_max_level to determine the optimum
    * amount of levels knowing the maximum size of our list.*/
   jrsl_initialize(&skip_list, (comparator_t)strcmp, free, P,
                   jrsl_max_level(26, P));
-
-  char *data[] = {"a", "e", "w", "d", "q", "u", "y", "b", "n",
-                  "c", "t", "m", "f", "z", "g", "o", "s", "h",
-                  "v", "i", "j", "p", "k", "r", "x", "l"};
 
   printf("\n\nEmpty skip list\n");
   jrsl_display_list(&skip_list, label_printer);
@@ -31,7 +33,6 @@ int main() {
   /* Inserting elements into the skip list to fill it up. We won't be using any
    * useful data, we will just malloc for every letter. */
   printf("\n\nInserting elements\n");
-  size_t i;
   for (i = 0; i < 26; i++) {
     jrsl_insert(&skip_list, data[i], malloc(sizeof(int)));
   }
@@ -39,8 +40,7 @@ int main() {
 
   /* Inserting an element which is already in the list */
   printf("\n\nInserting an element which is already in the list\n");
-  char *new_str = data[0];
-  free(jrsl_insert(&skip_list, new_str, malloc(sizeof(int))));
+  free(jrsl_insert(&skip_list, data[0], malloc(sizeof(int))));
   jrsl_display_list(&skip_list, label_printer);
 
   /* Let's get rid of some things. */
