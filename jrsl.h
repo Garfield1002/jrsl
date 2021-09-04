@@ -60,8 +60,6 @@
 extern "C" {
 #endif
 
-typedef unsigned short jrsl_us;
-
 typedef char (*comparator_t)(void *key1, void *key2);
 typedef void (*key_destructor_t)(void *key);
 typedef void (*node_visitor_t)(void *key, void *data);
@@ -82,13 +80,13 @@ typedef struct skip_node_t {
 
 typedef struct skip_list_t {
   /* Maximum level for this skip list */
-  jrsl_us max_level;
+  unsigned short max_level;
   /* The probabilty to add a new level.
    * p is probability so we must have 0<= p <= 1 */
   float p;
 
   /* Maximum length of a `forward` array */
-  jrsl_us level;
+  unsigned short level;
   size_t width;
 
   skip_node_t *head;
@@ -99,7 +97,7 @@ typedef struct skip_list_t {
 
 void jrsl_initialize(skip_list_t *skip_list, comparator_t comparator,
                      key_destructor_t key_destructor, float p,
-                     jrsl_us max_level);
+                     unsigned short max_level);
 void jrsl_destroy(skip_list_t *skip_list, node_visitor_t node_visitor);
 
 void *jrsl_search(skip_list_t *skip_list, void *key);
@@ -108,9 +106,10 @@ void *jrsl_remove(skip_list_t *skip_list, void *key);
 
 void jrsl_display_list(skip_list_t *skip_list, label_printer_t label_printor);
 
-jrsl_us jrsl_max_level(jrsl_us N /* Maximum number of elements */, float p);
+unsigned short jrsl_max_level(size_t N /* Maximum number of elements */,
+                              float p);
 
-static jrsl_us jrsl_random_level(skip_list_t *skip_list);
+static unsigned short jrsl_random_level(skip_list_t *skip_list);
 static void jrsl_center_string(char *str, size_t new_length);
 static void jrsl_init_head(skip_list_t *skip_list);
 
@@ -152,8 +151,8 @@ static void jrsl_init_head(skip_list_t *skip_list) {
 /* Initializes a skip list. */
 void jrsl_initialize(skip_list_t *skip_list, comparator_t comparator,
                      key_destructor_t key_destructor, float p,
-                     jrsl_us max_level) {
-  skip_list->level = 1;
+                     unsigned short max_level) {
+  skip_list->level = 1U;
   skip_list->width = 0;
   skip_list->max_level = max_level;
   skip_list->p = p;
@@ -181,16 +180,18 @@ void jrsl_destroy(skip_list_t *skip_list, node_visitor_t node_visitor) {
  * the skip list, returns NULL. This is a helper function used in `jrsl_key_at`
  * and `jrsl_data_at`.*/
 static skip_node_t *jrsl_node_at(skip_list_t *skip_list, size_t index) {
+  size_t i, w;
+  skip_node_t *x; /* skip node traveler */
+
   if (index >= skip_list->width)
     return NULL;
 
   /* The remaining width to travel. `index` is incremented by 1 because of the
    * presence of a head in the skip list. */
-  size_t w = index + 1;
+  w = index + 1;
 
-  skip_node_t *x = skip_list->head;
+  x = skip_list->head;
 
-  size_t i;
   for (i = skip_list->level - 1; i >= 0; i--) {
     while (x->forward[i].node && x->forward[i].width <= w) {
       w -= x->forward[i].width;
@@ -223,10 +224,10 @@ void *jrsl_data_at(skip_list_t *skip_list, size_t index) {
  * the skip list returns NULL.
  */
 void *jrsl_search(skip_list_t *skip_list, void *key) {
+  size_t i;
   skip_node_t *x;
   x = skip_list->head;
 
-  size_t i;
   for (i = skip_list->level; i > 0; --i) {
     while (x->forward[i - 1].node != NULL &&
            skip_list->comparator(x->forward[i - 1].node->key, key) < 0) {
@@ -247,6 +248,11 @@ void *jrsl_search(skip_list_t *skip_list, void *key) {
  * that key is already in the list, updates that element and returns the
  * previous data. */
 void *jrsl_insert(skip_list_t *skip_list, void *key, void *data) {
+  size_t i;              /* used in for loops */
+  skip_node_t *x;        /* skip node traveler */
+  unsigned short level;  /* the level of the new node */
+  skip_node_t *new_node; /* the new node */
+
   /* Helper array of pointers to elements that will need updating. */
   skip_node_t **update =
       (skip_node_t **)malloc(skip_list->max_level * sizeof(skip_node_t *));
@@ -261,8 +267,7 @@ void *jrsl_insert(skip_list_t *skip_list, void *key, void *data) {
   }
 
   /* Finds the correct spot for the key in the skip list. */
-  skip_node_t *x = skip_list->head;
-  size_t i;
+  x = skip_list->head;
   for (i = skip_list->level; i > 0; --i) {
     /* The sum of traveled widths. */
     size_t width_sum = 0;
@@ -290,7 +295,7 @@ void *jrsl_insert(skip_list_t *skip_list, void *key, void *data) {
   }
 
   /* The level for the new node. */
-  size_t level = jrsl_random_level(skip_list);
+  level = jrsl_random_level(skip_list);
 
   /* sanity check */
   assert(level < skip_list->max_level);
@@ -310,7 +315,7 @@ void *jrsl_insert(skip_list_t *skip_list, void *key, void *data) {
     skip_list->level = level;
   }
 
-  skip_node_t *new_node = (skip_node_t *)malloc(sizeof(skip_node_t));
+  new_node = (skip_node_t *)malloc(sizeof(skip_node_t));
 
   if (!new_node) {
     /* Malloc Failure */
@@ -374,6 +379,9 @@ void *jrsl_insert(skip_list_t *skip_list, void *key, void *data) {
 /* Removes an element from the skip list and returns its data. If it's not
  * in the list returns NULL. */
 void *jrsl_remove(skip_list_t *skip_list, void *key) {
+  size_t i;       /*used  in for loops */
+  skip_node_t *x; /* A skip node traveler */
+  void *old;      /* A pointer to the node we will remove */
   /* Helper array of pointers to elements that will need updating. */
   skip_node_t **update =
       (skip_node_t **)malloc(skip_list->level * sizeof(skip_node_t *));
@@ -384,8 +392,7 @@ void *jrsl_remove(skip_list_t *skip_list, void *key) {
   }
 
   /* Finds the theoretical location of the key. */
-  skip_node_t *x = skip_list->head;
-  size_t i;
+  x = skip_list->head;
   for (i = skip_list->level; i > 0; --i) {
     while (x->forward[i - 1].node != NULL &&
            skip_list->comparator(x->forward[i - 1].node->key, key) < 0) {
@@ -421,7 +428,7 @@ void *jrsl_remove(skip_list_t *skip_list, void *key) {
 
   free(update);
 
-  void *old = x->data;
+  old = x->data;
   free(x->forward);
   free(x);
 
@@ -433,7 +440,7 @@ void *jrsl_remove(skip_list_t *skip_list, void *key) {
   return old;
 }
 
-static jrsl_us jrsl_random_level(skip_list_t *skip_list) {
+static unsigned short jrsl_random_level(skip_list_t *skip_list) {
   /* We don't actually care about initialization */
   float rnd = rand() / (float)RAND_MAX;
   size_t level = 1;
@@ -447,7 +454,7 @@ static jrsl_us jrsl_random_level(skip_list_t *skip_list) {
 /* Returns the optimal max level based on the probability `p` to add a new
  * level and the estimated maximum number of elements `N`.
  * If `p` is invalid (p > 1 || p < 0) returns 0 */
-jrsl_us jrsl_max_level(jrsl_us N, float p) {
+unsigned short jrsl_max_level(size_t N, float p) {
   if (!(0 <= p <= 1))
     return 0;
   return (size_t)(log(N) / log(1 / p));
@@ -508,8 +515,8 @@ void jrsl_display_list(skip_list_t *skip_list, label_printer_t label_printer) {
 
   /* draws the labels */
   if (label_printer) {
-    printf("      ");
     skip_node_t *node = skip_list->head->forward[0].node;
+    printf("      ");
     while (node) {
       label_printer(node->key, node->data);
       node = node->forward[0].node;
